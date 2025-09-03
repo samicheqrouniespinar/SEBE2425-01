@@ -1361,6 +1361,103 @@ plot.caption = element_text(face = "italic")) +
 theme(legend.position="none")
 Plot_24
 
+
+# Load profile for one of the heat pumps on one of the cold days
+Plot_25 <- ggplot(EOH0745, aes(x = Timestamp, y= Power_output_2mins_kW),legend()) +
+  geom_line()+
+  geom_point(aes(colour = On_Off_flag))+
+  xlim(as.POSIXct(c("2020-12-24 17:00:00", "2020-12-25 00:00:00"))) +
+  coord_cartesian(ylim = c(0,4))+
+  labs(x = "Time" , 
+       y = "Power output per 2-minute interval (kW)"
+  ) +
+  ggtitle("Load  profile of Property ID EOH0745 on 2020-12-25") +
+  theme_bw()+
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 15),
+    plot.caption = element_text(face = "italic"))+
+  theme(legend.position="none")
+Plot_25
+
+
+# Temperature profile for one of the heat pumps on one of the cold days
+Plot_26 <- ggplot(EOH0745, aes(x = Timestamp, y= Internal_Air_Temperature)) +
+  geom_line()+
+  geom_point(aes(colour = On_Off_flag))+
+  xlim(as.POSIXct(c("2020-12-24 17:00:00", "2020-12-25 00:00:00"))) +
+  coord_cartesian(ylim = c(18.5,20.5))+
+  labs(x = "" ,
+       y = "Internal air temperature (degrees °C)",
+       colour = "Heat pump operating mode") +
+  ggtitle("Temperature profile of Property ID EOH0745 on 2020-12-25") +
+  theme_bw()+
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 15),
+    plot.caption = element_text(face = "italic"),
+    legend.title = element_text(size=12.5),
+    legend.position = "right") +
+  theme(legend.text=element_text(size=12.5))
+Plot_26
+
+Plot_26  + Plot_25 + plot_layout(ncol = 1)
+
+# Creating on and off flags in the data 
+EOH0745 <- EOH0745 %>%
+  arrange(Property_ID, Timestamp) %>%
+  mutate(On_Off_flag_num = ifelse(On_Off_flag == "Off",0,1)) %>%
+  ungroup()
+
+# Formatting date as date class type
+EOH0745$date <- ymd(EOH0745$date)
+
+# Ensure the above variable is formatted as a number 
+EOH0745$On_Off_flag_num <- as.numeric(EOH0745$On_Off_flag_num)
+
+# Consecutive variable used to identify where for the same heat pump and on the same date 
+# the heat pump is turning from 'On' to 'Off'
+# Only run this and other shift functions once otherwise it moves periods too much and you need
+# to process data frame from scratch 
+EOH0745 <- EOH0745 %>%
+  group_by(Property_ID, date) %>%
+  mutate(consecutive = shift(On_Off_flag_num, 1, type = "lag", fill = NA)) %>%
+  mutate(consecutive_new = On_Off_flag_num - consecutive) %>%
+  ungroup()
+
+
+# On and off flag within the data 
+Plot_27 <- ggplot(EOH0745, aes(x = Timestamp, y= consecutive_new)) +
+  geom_line()+
+  xlim(as.POSIXct(c("2020-12-24 17:00:00", "2020-12-25 00:00:00"))) +
+  labs(x = "Time" , y = "Change in value of binary on and off flag") +
+  ggtitle("On and off transition points of Property ID EOH0745 on 2020-12-25") +
+  theme_bw()+
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 15),
+    plot.caption = element_text(face = "italic"))+
+  theme(legend.position="none")
+Plot_27
+
+
+Plot_25  + Plot_27 + plot_layout(ncol = 1)
+
+
+temp_range <- flexibility_periods_full %>%
+  group_by(run_id) %>%
+  mutate(temp_range = range(Internal_Air_Temperature))
+
+# On and off flag within the data 
+Plot_28 <- ggplot(EOH0745, aes(x = Hour_Minute, y= consecutive_new)) +
+  geom_line()+
+  xlim(as.POSIXct(c("2020-12-24 17:00:00", "2020-12-25 00:00:00"))) +
+  labs(x = "Time" , y = "Change in value of binary on and off flag") +
+  ggtitle("On and off transition points of Property ID EOH0745 on 2020-12-25") +
+  theme_bw()+
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 15),
+    plot.caption = element_text(face = "italic"))+
+  theme(legend.position="none")
+Plot_28
+
 ################################################################################################
 ## Non-core section of script 
 ## Visualising trend of energy consumption and temperature change for a single day
@@ -1375,7 +1472,7 @@ filtered_data_one_day1 <- subset(filtered_data_one_day1, select = c("Timestamp",
 
 # Create a facet plot with both internal temperature and lagged consumption varying 
 # for the same time period for the suitable day identified above
-Plot_25 <- filtered_data_one_day1 %>% 
+Plot_29 <- filtered_data_one_day1 %>% 
   pivot_longer(-Timestamp) %>%
   ggplot(aes(x = Timestamp, y = value)) +
   xlim(as.POSIXct(c("2020-12-24 17:00:00","2020-12-25 00:00:00")))+
@@ -1390,7 +1487,7 @@ Plot_25 <- filtered_data_one_day1 %>%
   ) +
   facet_wrap(~name, ncol = 1, scales = "free_y")
  # geom_smooth(se= FALSE)
-Plot_25
+Plot_29
 
 ## Additional (non-core script) - Plotting temperature rise/fall with 
 # electricity consumption
@@ -1420,7 +1517,7 @@ min_power <- min(scaled_filtered_data$Power_output_2mins_kW)
 
 
 # Plot showing Internal air temperature and interval consumption for one of them 
-Plot_26 <- scaled_filtered_data %>%
+Plot_30 <- scaled_filtered_data %>%
   ggplot(aes(x = Timestamp)) +
   xlim(as.POSIXct(c("2020-12-24 17:00:00","2020-12-25 00:00:00"))) +
   geom_line(aes(y = Internal_Air_Temperature_tr), colour = "red") +
@@ -1454,4 +1551,4 @@ Plot_26 <- scaled_filtered_data %>%
   theme(axis.title.y.right = element_text(colour = "blue"))
 
 # Show the plot
-Plot_26
+Plot_30
