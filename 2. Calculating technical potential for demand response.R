@@ -1,4 +1,4 @@
-# Calculating flexibility potential from dataset 
+# Calculating technical potential for demand response from dataset 
 # Author - Sami Cheqrouni-Espinar
 # Date - 15/06/2025
 rm(filtered_data_sample)
@@ -117,4 +117,5 @@ filtered_data$Half_Hourly_shiftable_energy_potential_kWh <- round(filtered_data$
 filtered_data <- filtered_data  %>%  
   relocate(Hourly_shiftable_energy_potential_kWh, .before = Delivery_Contractor) %>%
   relocate(Half_Hourly_shiftable_energy_potential_kWh, .before = Delivery_Contractor)
+
 
